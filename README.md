@@ -62,10 +62,24 @@ Desktop-приложение на Python, которое убирает всю �
 
 - **Windows 10/11** — используется Win32 API (`user32.dll`), на других ОС не заработает без переписывания;
 - **Python 3.10+**;
-- **ключ Google Gemini API**;
+- **ключ Google Gemini API** — обязателен, вписывается в код или в переменную окружения;
 - доступ к сервису Gemini из вашей сети: если Google не обслуживает запросы из вашего региона, приложение покажет это отдельной ошибкой, а не «неверным ключом».
 
 ## Быстрый старт
+
+> ### ⚠️ ОБЯЗАТЕЛЬНО: вставьте API-ключ в код
+>
+> Откройте `helper.py` и в начале файла найдите строку:
+>
+> ```python
+> API_KEY = ""  # <-- ВСТАВЬТЕ API-КЛЮЧ СЮДА, МЕЖДУ КАВЫЧКАМИ
+> ```
+>
+> Впишите свой ключ между кавычками: `API_KEY = "ваш_ключ"`. **Без этого приложение не запустится** — оно остановится и прямо скажет, что ключ нужно вставить. Ключ выдаётся бесплатно в [Google AI Studio](https://aistudio.google.com/apikey).
+>
+> Альтернатива: оставьте строку пустой и задайте переменную окружения `GEMINI_API_KEY` (см. ниже).
+>
+> 🔒 **Не публикуйте файл с вписанным ключом.** Если закоммитить ключ в открытый репозиторий, он станет доступен всем, и Google его отзовёт. Вписывайте ключ только локально.
 
 ```bash
 git clone https://github.com/vlad200zel/gemini-helper.git
@@ -73,7 +87,7 @@ cd gemini-helper
 pip install -r requirements.txt
 ```
 
-Задайте ключ и запустите:
+Затем вставьте ключ в `helper.py` (обязательно) или задайте переменную окружения:
 
 ```bash
 # Windows, cmd/PowerShell — ключ сохраняется в профиле пользователя
@@ -136,9 +150,16 @@ $env:GEMINI_API_KEY = "ваш_ключ"; python helper.py
 git clone https://github.com/vlad200zel/gemini-helper.git
 cd gemini-helper
 pip install -r requirements.txt
+```
+
+**Required: paste your API key into the code.** Open `helper.py`, find the line `API_KEY = ""` at the top and put your key between the quotes — the app refuses to start without it. Alternatively, leave the line empty and set the `GEMINI_API_KEY` environment variable:
+
+```bash
 setx GEMINI_API_KEY "your_key"    # then open a new terminal
 python helper.py
 ```
+
+Never commit the file with the key filled in: a key pushed to a public repository is public, and Google revokes it.
 
 Requires Windows 10/11, Python 3.10+ and a Gemini API key. Copied text is sent to Google — do not use it on secrets or confidential documents. Details and troubleshooting: [docs/USAGE.md](docs/USAGE.md).
 

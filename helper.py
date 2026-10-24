@@ -16,8 +16,16 @@ from google import genai
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 
-# Ключ берётся только из переменной окружения GEMINI_API_KEY.
-API_KEY = os.environ.get("GEMINI_API_KEY")
+# ==============================================================================
+#  ОБЯЗАТЕЛЬНО: ВСТАВЬТЕ СВОЙ API-КЛЮЧ GEMINI В СТРОКУ НИЖЕ
+#  Ключ выдаётся в Google AI Studio: https://aistudio.google.com/apikey
+#  Без ключа приложение не запустится — впишите его между кавычками.
+#  Если ключ уже задан переменной окружения GEMINI_API_KEY, строку можно
+#  оставить пустой — тогда возьмётся переменная окружения.
+#  Внимание: не публикуйте файл с вписанным ключом — ключ станет доступен всем.
+# ==============================================================================
+API_KEY = ""  # <-- ВСТАВЬТЕ API-КЛЮЧ СЮДА, МЕЖДУ КАВЫЧКАМИ
+API_KEY = API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "")
 MODEL = "gemini-2.5-flash"
 PROMPT = (
     "Ты помогаешь с тестом. Дай максимально краткий и точный правильный ответ "
@@ -132,10 +140,27 @@ def hotkey_loop(window):
         user32.UnregisterHotKey(None, HOTKEY_ID)
 
 
+def _utf8_console():
+    """Чтобы русский текст в консоли не превращался в кракозябры."""
+    try:
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+    except Exception:
+        pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
 def main():
+    _utf8_console()
+
     if not API_KEY:
-        print("Не найден GEMINI_API_KEY. Задайте переменную окружения и запустите снова:")
+        print("ОБЯЗАТЕЛЬНО ВСТАВЬТЕ API-КЛЮЧ GEMINI:")
+        print('  откройте helper.py и впишите ключ в строку  API_KEY = ""  ')
+        print("  либо задайте переменную окружения:")
         print('  setx GEMINI_API_KEY "ваш_ключ"   (Windows, затем новый терминал)')
+        print("  Ключ выдаётся в Google AI Studio: https://aistudio.google.com/apikey")
         sys.exit(1)
 
     global client
