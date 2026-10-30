@@ -67,7 +67,9 @@ Desktop-приложение на Python, которое убирает всю �
 
 ## Получение и настройка API-ключа
 
-Поддерживаются два варианта подключения к GigaChat. Задаётся всё через переменные окружения, ключи в код вписывать не нужно.
+> 🔒 **В репозитории и в коде никаких ключей нет.** Секреты не захардкожены и не закоммичены — каждый пользователь вводит **свои** данные сам. Есть два способа: переменные окружения или интерактивный запрос в консоли при запуске. Введённые в консоли ключи нигде не сохраняются и действуют только до закрытия программы.
+
+Поддерживаются два варианта подключения к GigaChat. Ключи в код вписывать не нужно.
 
 ### Вариант 1 (проще): Cloud.ru Foundation Models
 
@@ -102,6 +104,22 @@ setx GIGACHAT_AUTH_KEY "ваш_key_авторизации"
 
 Если задан `CLOUDRU_API_KEY`, используется Вариант 1; иначе — GigaChat через Сбер. Приложение само запрашивает OAuth-токен и продлевает его, пока работает.
 
+### Вариант 3: интерактивный запрос в консоли (самый простой)
+
+Задавать переменные окружения необязательно. Просто запустите скрипт — если ни одного ключа в окружении нет, программа **спросит данные прямо в терминале**:
+
+```bash
+python helper.py
+```
+
+При запуске появится подсказка с выбором:
+
+1. Ввести **Cloud.ru API-ключ** (один Key Secret) — проще всего;
+2. Либо ввести **ключ авторизации Сбера** (base64);
+3. Либо ввести **client_id** и **client_secret** Сбера по отдельности.
+
+Секретный ввод (`client_secret` и ключ авторизации) скрыт — символы не отображаются в терминале. **Введённые данные нигде не сохраняются**: ни в код, ни в файл, ни на диск. Они действуют только на текущий запуск и исчезают при закрытии окна/скрипта.
+
 ```bash
 git clone https://github.com/vlad200zel/smart-helper.git
 cd smart-helper
@@ -133,7 +151,9 @@ python helper.py
 
 ## Приватность
 
-Скопированный текст **уходит в сеть** как запрос к API GigaChat: это сетевой сервис, локальной модели здесь нет. Не копируйте под хоткей пароли, персональные данные и рабочую документацию под NDA. Ключи хранятся в переменных окружения, а не в коде — так их можно отозвать в любой момент, не пересобирая проект.
+Скопированный текст **уходит в сеть** как запрос к API GigaChat: это сетевой сервис, локальной модели здесь нет. Не копируйте под хоткей пароли, персональные данные и рабочую документацию под NDA.
+
+**Ваши API-данные в репозитории не хранятся.** Секреты не зашиты в код и не лежат в истории коммитов. Каждый пользователь вводит свои ключи сам — через переменные окружения либо прямо в терминале при запуске (введённое в консоли нигде не сохраняется и живёт только до закрытия программы). Пока приложение работает, оно запрашивает OAuth-токен у Сбера и отзывает ключ нигде не нужно — в любой момент достаточно закрыть программу.
 
 ## Ограничения
 
@@ -161,7 +181,9 @@ cd smart-helper
 pip install -r requirements.txt
 ```
 
-**Set an API key via environment variable.** Two ways:
+**No keys are stored in this repository or in the code.** Every user enters their own credentials — either via environment variables or interactively in the terminal at startup. What you type into the console is never saved to disk and lasts only for that run.
+
+### Set keys via environment variable (persistent)
 
 ```bash
 # Cloud.ru Foundation Models (simpler, single bearer key)
@@ -170,6 +192,9 @@ setx CLOUDRU_API_KEY "your_api_key"
 # or Sber GigaChat directly (client_id / client_secret from the Sber dev console)
 setx GIGACHAT_CLIENT_ID "your_client_id"
 setx GIGACHAT_CLIENT_SECRET "your_client_secret"
+
+# or a ready-made Sber auth key (base64 of client_id:client_secret)
+setx GIGACHAT_AUTH_KEY "your_auth_key"
 ```
 
 Then open a new terminal and run:
@@ -178,9 +203,17 @@ Then open a new terminal and run:
 python helper.py
 ```
 
-Never commit keys into the repository — they are read from environment variables, so they can be revoked at any time without rebuilding the project.
+### Enter keys interactively (simplest, no env needed)
 
-Requires Windows 10/11 and Python 3.10+. Copied text is sent to the GigaChat API over the network — do not use it on secrets or confidential documents. Details and troubleshooting: [docs/USAGE.md](docs/USAGE.md).
+Just run the script — if no key is found in the environment, it asks you for the credentials right in the terminal:
+
+```powershell
+python helper.py
+```
+
+Pick one of: Cloud.ru API key, a Sber auth key (base64), or client_id/client_secret. Secret input is masked in the console. Entered values are **not saved anywhere** — they live only until the app closes.
+
+Never commit keys into the repository — this project contains no secrets, and they can always be revoked on the provider side. Copied text is sent to the GigaChat API over the network — do not use it on secrets or confidential documents. Details and troubleshooting: [docs/USAGE.md](docs/USAGE.md).
 
 ---
 

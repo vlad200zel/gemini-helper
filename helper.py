@@ -26,7 +26,8 @@ CLOUDRU_MODEL = os.environ.get("CLOUDRU_MODEL", "ai-sage/GigaChat3-10B-A1.8B")
 GIGACHAT_CLIENT_ID = os.environ.get("GIGACHAT_CLIENT_ID", "")
 GIGACHAT_CLIENT_SECRET = os.environ.get("GIGACHAT_CLIENT_SECRET", "")
 # Готовый «ключ авторизации» из кабинета Сбера (уже base64 от client_id:client_secret).
-GIGACHAT_AUTH_KEY = os.environ.get("GIGACHAT_AUTH_KEY") or "GIGACHAT_AUTH_KEY_GIGACHAT"
+# Если не задан в переменной окружения, приложение спросит его при запуске (см. prompt_credentials ниже).
+GIGACHAT_AUTH_KEY = os.environ.get("GIGACHAT_AUTH_KEY", "")
 GIGACHAT_SCOPE = os.environ.get("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
 GIGACHAT_MODEL = os.environ.get("GIGACHAT_MODEL", "GigaChat")
 OAUTH_URL = os.environ.get("GIGACHAT_OAUTH_URL", "https://ngw.devices.sberbank.ru:9443/api/v2/oauth")
@@ -274,7 +275,63 @@ def hotkey_loop(window):
         user32.UnregisterHotKey(None, HOTKEY_ID)
 
 
+def prompt_credentials():
+    """Спрашивает ключи в консоли при запуске, если их не задали через переменные окружения.
+
+    Ничего не сохраняет в код и на диск — данные живут только в этой сессии запуска.
+    Возвращает None после ввода; переменные CLOUDRU_API_KEY / GIGACHAT_AUTH_KEY
+    обновляются глобально (см. объявление в начале файла).
+    """
+    global CLOUDRU_API_KEY, GIGACHAT_AUTH_KEY
+
+    if CLOUDRU_API_KEY:
+        print("CLOUDRU_API_KEY найден в переменной окружения — ключ уже задан.")
+        return
+    if GIGACHAT_AUTH_KEY:
+        print("GIGACHAT_AUTH_KEY найден в переменной окружения — ключ уже задан.")
+        return
+
+    from getpass import getpass
+
+    print("=" * 60)
+    print("Не найдены ключи GigaChat в переменных окружения.")
+    print("Сейчас введи свои данные — они НЕ сохраняются в код и на диск,")
+    print("а действуют только на время этого запуска.")
+    print("=" * 60)
+    print()
+    print("Вариант 1 (проще) — Cloud.ru Foundation Models:")
+    print("  Нужен один API-ключ (Key Secret). Консоль cloud.ru ->")
+    print("  Пользователи -> Сервисные аккаунты -> Учётные данные доступа ->")
+    print("  Создать API-ключ (Сервисы: Foundation Models).")
+    cloudru = input("Введи Cloud.ru API-ключ (или Enter, чтобы пропустить): ").strip()
+    if cloudru:
+        CLOUDRU_API_KEY = cloudru
+        print("Cloud.ru ключ принят. Модель: " + CLOUDRU_MODEL)
+        return
+
+    print()
+    print("Вариант 2 — напрямую через Сбер (developers.sber.ru -> GigaChat API).")
+    print("  Нужны client_id и client_secret из проекта разработчика.")
+    print("  Либо один готовый ключ авторизации (base64 от client_id:client_secret).")
+    auth = getpass("Введи ключ авторизации (base64) или Enter, чтобы ввести client_id/client_secret: ").strip()
+    if auth:
+        GIGACHAT_AUTH_KEY = auth
+        print("Ключ авторизации принят. Модель: " + GIGACHAT_MODEL)
+        return
+
+    cid = input("Введи GIGACHAT_CLIENT_ID: ").strip()
+    csec = getpass("Введи GIGACHAT_CLIENT_SECRET: ").strip()
+    if not (cid and csec):
+        print("Ошибка: не заданы данные для подключения. Запусти приложение снова и введи ключи.")
+        sys.exit(1)
+    # В этом режиме токен получаем из введённых client_id/client_secret:
+    import base64 as _b64
+    GIGACHAT_AUTH_KEY = _b64.b64encode(f"{cid}:{csec}".encode()).decode()
+    print("Сформирован ключ авторизации из client_id/client_secret. Модель: " + GIGACHAT_MODEL)
+
+
 def main():
+    prompt_credentials()
     app = QApplication(sys.argv)
     window = FloatingWindow()
     window.answer_ready.connect(window.update_answer)
