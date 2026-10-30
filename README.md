@@ -1,15 +1,15 @@
 <div align="center">
 
-# Gemini Helper
+# Smart Helper
 
 **Скопировал вопрос → нажал Ctrl+Shift+Q → прочитал ответ**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![PyQt5](https://img.shields.io/badge/PyQt5-5.15-41CD52?logo=qt&logoColor=white)](https://pypi.org/project/PyQt5/)
-[![Gemini API](https://img.shields.io/badge/Gemini%202.5%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
+[![GigaChat](https://img.shields.io/badge/GigaChat-Sber-2767e9?logo=sberbank&logoColor=white)](https://developers.sber.ru/portal/products/gigachat-api)
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white)](#требования)
 
-Мини-утилита для рабочего стола: один хоткей — и краткий ответ на скопированный вопрос появляется поверх всех окон, в левом верхнем углу экрана.
+Мини-утилита для рабочего стола: один хоткей — и краткий ответ на скопированный вопрос появляется поверх всех окон, в левом верхнем углу экрана. Запросы обрабатывает **GigaChat**.
 
 </div>
 
@@ -31,8 +31,9 @@ Desktop-приложение на Python, которое убирает всю �
 | **Ответ без воды** | Промпт требует только суть: вариант ответа или точную формулировку, без рассуждений |
 | **Окно поверх всех** | Всегда на виду, без рамки и заголовка, не перехватывает фокус и не мешает печатать |
 | **Перетаскивание** | Окно двигается мышью в любое место экрана |
+| **Быстрое скрытие** | `Num 3` прячет/показывает окно — удобно, когда помощник не должен мешать |
 | **Нет лишних кликов** | Один хоткей вместо «открыть браузер → вставить → отправить → найти ответ» |
-| **Скорость** | 3–5 секунд при нормальном соединении: короткий запрос к `gemini-2.5-flash` |
+| **Скорость** | 3–5 секунд при нормальном соединении: короткий запрос к модели GigaChat |
 | **Защита от дурака** | Пустой буфер, занятый хоткей и ошибки сети показываются человеческим текстом |
 
 ## Как это работает
@@ -45,8 +46,8 @@ Desktop-приложение на Python, которое убирает всю �
                                                           ▼
                                        ┌──────────────────────────────────┐
                                        │ pyperclip → текст вопроса        │
-                                       │ PROMPT + вопрос → Gemini 2.5     │
-                                       │ (google-genai, звонок в сети)    │
+                                       │ POST /chat/completions → GigaChat│
+                                       │ (запрос уходит в сеть)           │
                                        └──────────────┬───────────────────┘
                                                       │  ответ модели
                                                       ▼
@@ -56,50 +57,56 @@ Desktop-приложение на Python, которое убирает всю �
                                        └──────────────────────────────────┘
 ```
 
-Хоткей регистрируется через Win32 `RegisterHotKey` в отдельном потоке, запрос к модели уходит в фоне — интерфейс не подвисает, а повторное нажатие во время запроса игнорируется (`threading.Lock`).
+Хоткей регистрируется через Win32 `RegisterHotKey` в отдельном потоке, запрос к модели уходит в фоне — интерфейс не подвисает, а повторное нажатие во время запроса игнорируется (`threading.Lock`). Отдельный хоткей `Num 3` скрывает и снова показывает окно.
 
 ## Требования
 
 - **Windows 10/11** — используется Win32 API (`user32.dll`), на других ОС не заработает без переписывания;
 - **Python 3.10+**;
-- **ключ Google Gemini API** — обязателен, вписывается в код или в переменную окружения;
-- доступ к сервису Gemini из вашей сети: если Google не обслуживает запросы из вашего региона, приложение покажет это отдельной ошибкой, а не «неверным ключом».
+- **доступ к GigaChat API** — ключ через Сбер или Cloud.ru Foundation Models (см. ниже).
 
-## Быстрый старт
+## Получение и настройка API-ключа
 
-> ### ⚠️ ОБЯЗАТЕЛЬНО: вставьте API-ключ в код
->
-> Откройте `helper.py` и в начале файла найдите строку:
->
-> ```python
-> API_KEY = ""  # <-- ВСТАВЬТЕ API-КЛЮЧ СЮДА, МЕЖДУ КАВЫЧКАМИ
-> ```
->
-> Впишите свой ключ между кавычками: `API_KEY = "ваш_ключ"`. **Без этого приложение не запустится** — оно остановится и прямо скажет, что ключ нужно вставить. Ключ выдаётся бесплатно в [Google AI Studio](https://aistudio.google.com/apikey).
->
-> Альтернатива: оставьте строку пустой и задайте переменную окружения `GEMINI_API_KEY` (см. ниже).
->
-> 🔒 **Не публикуйте файл с вписанным ключом.** Если закоммитить ключ в открытый репозиторий, он станет доступен всем, и Google его отзовёт. Вписывайте ключ только локально.
+Поддерживаются два варианта подключения к GigaChat. Задаётся всё через переменные окружения, ключи в код вписывать не нужно.
+
+### Вариант 1 (проще): Cloud.ru Foundation Models
+
+OpenAI-совместимый API, нужен только один API-ключ (HTTP bearer-токен).
+
+1. Консоль Cloud.ru → **Пользователи → Сервисные аккаунты → аккаунт**.
+2. **Учётные данные доступа → Создать API-ключ** (сервисы: Foundation Models) → скопировать **Key Secret**.
+3. Задать переменную окружения:
 
 ```bash
-git clone https://github.com/vlad200zel/gemini-helper.git
-cd gemini-helper
-pip install -r requirements.txt
-```
-
-Затем вставьте ключ в `helper.py` (обязательно) или задайте переменную окружения:
-
-```bash
-# Windows, cmd/PowerShell — ключ сохраняется в профиле пользователя
-setx GEMINI_API_KEY "ваш_ключ"
+setx CLOUDRU_API_KEY "ваш_api_ключ"
 # откройте новый терминал, чтобы переменная подхватилась
 python helper.py
 ```
 
-Ключ также можно передать на один запуск:
+### Вариант 2: напрямую через Сбер
 
-```powershell
-$env:GEMINI_API_KEY = "ваш_ключ"; python helper.py
+Документация: <https://developers.sber.ru/portal/products/gigachat-api>
+
+Нужны `client_id` и `client_secret` из личного кабинета разработчика Сбера:
+
+```bash
+setx GIGACHAT_CLIENT_ID "ваш_client_id"
+setx GIGACHAT_CLIENT_SECRET "ваш_client_secret"
+```
+
+Либо, если у вас уже есть готовый «ключ авторизации» (base64 от `client_id:client_secret`):
+
+```bash
+setx GIGACHAT_AUTH_KEY "ваш_key_авторизации"
+```
+
+Если задан `CLOUDRU_API_KEY`, используется Вариант 1; иначе — GigaChat через Сбер. Приложение само запрашивает OAuth-токен и продлевает его, пока работает.
+
+```bash
+git clone https://github.com/vlad200zel/smart-helper.git
+cd smart-helper
+pip install -r requirements.txt
+python helper.py
 ```
 
 **Проверка:** скопируйте любой текст (`Ctrl+C`) и нажмите `Ctrl+Shift+Q` — окно в левом верхнем углу покажет «Думаю…», затем ответ.
@@ -110,7 +117,7 @@ $env:GEMINI_API_KEY = "ваш_ключ"; python helper.py
 2. В любом приложении выделите вопрос и нажмите `Ctrl+C`.
 3. Нажмите **`Ctrl+Shift+Q`** и подождите 3–5 секунд.
 4. Прочитайте ответ. Текст в окне можно выделить и скопировать (например, чтобы вставить в бланк).
-5. Окно перетаскивается мышью за любое место; закрывается через `Alt+F4` после клика по нему или остановкой скрипта.
+5. Окно перетаскивается мышью за любое место; закрывается через `Alt+F4` после клика по нему или остановкой скрипта. Клавиша **`Num 3`** скрывает и снова показывает окно.
 
 Подробнее, с разбором ошибок — в [docs/USAGE.md](docs/USAGE.md).
 
@@ -118,14 +125,15 @@ $env:GEMINI_API_KEY = "ваш_ключ"; python helper.py
 
 | Что | Где | По умолчанию |
 |---|---|---|
-| Модель | `MODEL` в `helper.py` | `gemini-2.5-flash` |
+| Модель | `CLOUDRU_MODEL` / `GIGACHAT_MODEL` в `helper.py` | `ai-sage/GigaChat3-10B-A1.8B` / `GigaChat` |
 | Текст запроса | `PROMPT` в `helper.py` | краткий ответ, без рассуждений |
-| Хоткей | `vk_q` и модификаторы в `hotkey_loop` | `Ctrl+Shift+Q` |
+| Хоткей ответа | `vk_q` и модификаторы в `hotkey_loop` | `Ctrl+Shift+Q` |
+| Хоткей скрытия | `VK_NUMPAD3` в `hotkey_loop` | `Num 3` |
 | Размер и позиция окна | `setFixedWidth(360)`, `move(50, 50)` | 360 px, левый верхний угол |
 
 ## Приватность
 
-Скопированный текст **уходит в Google** как запрос к Gemini API: это сетевой сервис, локальной модели здесь нет. Не копируйте под хоткей пароли, персональные данные и рабочую документацию под NDA. Ключ хранится в переменной окружения, а не в коде — так его можно отозвать в любой момент, не пересобирая проект.
+Скопированный текст **уходит в сеть** как запрос к API GigaChat: это сетевой сервис, локальной модели здесь нет. Не копируйте под хоткей пароли, персональные данные и рабочую документацию под NDA. Ключи хранятся в переменных окружения, а не в коде — так их можно отозвать в любой момент, не пересобирая проект.
 
 ## Ограничения
 
@@ -138,30 +146,41 @@ $env:GEMINI_API_KEY = "ваш_ключ"; python helper.py
 
 ## English
 
-**Gemini Helper** is a small Windows desktop utility: press `Ctrl+Shift+Q` after copying a question and a compact always-on-top window in the top-left corner shows a short, direct answer from Google Gemini — no browser, no chat, no filler.
+**Smart Helper** is a small Windows desktop utility: press `Ctrl+Shift+Q` after copying a question and a compact always-on-top window in the top-left corner shows a short, direct answer from **GigaChat** (via Sber or Cloud.ru Foundation Models) — no browser, no chat, no filler.
 
 - Global hotkey registered through Win32 `RegisterHotKey`, so it works from any application.
 - Clipboard-based input: copy with a normal `Ctrl+C`, no pasting.
 - Frameless, transparent, always-on-top window that never steals focus and can be dragged anywhere.
-- Answers are requested with a prompt that asks for the point only, using `gemini-2.5-flash`.
-- Graceful handling of an empty clipboard, a busy hotkey and network/region errors.
+- `Num 3` toggles the window visibility.
+- Answers are requested with a prompt that asks for the point only.
+- Graceful handling of an empty clipboard, a busy hotkey and network/API errors.
 
 ```bash
-git clone https://github.com/vlad200zel/gemini-helper.git
-cd gemini-helper
+git clone https://github.com/vlad200zel/smart-helper.git
+cd smart-helper
 pip install -r requirements.txt
 ```
 
-**Required: paste your API key into the code.** Open `helper.py`, find the line `API_KEY = ""` at the top and put your key between the quotes — the app refuses to start without it. Alternatively, leave the line empty and set the `GEMINI_API_KEY` environment variable:
+**Set an API key via environment variable.** Two ways:
 
 ```bash
-setx GEMINI_API_KEY "your_key"    # then open a new terminal
+# Cloud.ru Foundation Models (simpler, single bearer key)
+setx CLOUDRU_API_KEY "your_api_key"
+
+# or Sber GigaChat directly (client_id / client_secret from the Sber dev console)
+setx GIGACHAT_CLIENT_ID "your_client_id"
+setx GIGACHAT_CLIENT_SECRET "your_client_secret"
+```
+
+Then open a new terminal and run:
+
+```powershell
 python helper.py
 ```
 
-Never commit the file with the key filled in: a key pushed to a public repository is public, and Google revokes it.
+Never commit keys into the repository — they are read from environment variables, so they can be revoked at any time without rebuilding the project.
 
-Requires Windows 10/11, Python 3.10+ and a Gemini API key. Copied text is sent to Google — do not use it on secrets or confidential documents. Details and troubleshooting: [docs/USAGE.md](docs/USAGE.md).
+Requires Windows 10/11 and Python 3.10+. Copied text is sent to the GigaChat API over the network — do not use it on secrets or confidential documents. Details and troubleshooting: [docs/USAGE.md](docs/USAGE.md).
 
 ---
 
@@ -169,6 +188,6 @@ Requires Windows 10/11, Python 3.10+ and a Gemini API key. Copied text is sent t
 
 **Автор · Author:** Владислав Зеленков · [@vlad200zel](https://github.com/vlad200zel)
 
-Python · PyQt5 · Gemini API
+Python · PyQt5 · GigaChat
 
 </div>
